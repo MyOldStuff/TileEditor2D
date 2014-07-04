@@ -8,6 +8,7 @@ using System.IO;
 [CustomEditor(typeof(TileMap))]
 public class TileMapEditor : Editor
 {
+
 	enum State { Hover, BoxSelect }
 	static Vector3[] rect = new Vector3[4];
 
