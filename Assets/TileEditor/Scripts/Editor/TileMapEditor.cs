@@ -18,9 +18,9 @@ public class TileMapEditor : Editor
 
 	State state;
 	int cursorX;
-	int cursorZ;
+	int cursorY;
 	int cursorClickX;
-	int cursorClickZ;
+	int cursorClickY;
 	bool deleting;
 	int direction;
 
@@ -272,18 +272,28 @@ public class TileMapEditor : Editor
 			//Draw axes
 			Handles.color = Color.red;
 			Handles.DrawLine(new Vector3(-tileMap.tileSize, 0, 0), new Vector3(tileMap.tileSize, 0, 0));
-			Handles.DrawLine(new Vector3(0, 0, -tileMap.tileSize), new Vector3(0, 0, tileMap.tileSize));
+			Handles.DrawLine(new Vector3(0, -tileMap.tileSize, 0), new Vector3(0, tileMap.tileSize, 0));
 
 			//Update mouse position
-			var plane = new Plane(tileMap.transform.up, tileMap.transform.position);
-			var ray = Camera.current.ScreenPointToRay(new Vector3(e.mousePosition.x, Camera.current.pixelHeight - e.mousePosition.y));
+			//var plane = new Plane(tileMap.transform.up, tileMap.transform.position);
+			var plane = new Plane(-tileMap.transform.forward, tileMap.transform.position);
+
+			var ray = Camera.current.ScreenPointToRay(new Vector3(e.mousePosition.x, Camera.current.pixelHeight - e.mousePosition.y, 0));
+
 			float hit;
 			if (!plane.Raycast(ray, out hit))
+			{
 				return;
-			var mousePosition = worldToLocal.MultiplyPoint(ray.GetPoint(hit));
-			cursorX = Mathf.RoundToInt(mousePosition.x / tileMap.tileSize);
-			cursorZ = Mathf.RoundToInt(mousePosition.z / tileMap.tileSize);
+			}
 
+			var mousePosition = worldToLocal.MultiplyPoint(ray.GetPoint(hit));
+
+			cursorX = Mathf.RoundToInt(mousePosition.x / tileMap.tileSize);
+			cursorY = Mathf.RoundToInt(mousePosition.y / tileMap.tileSize);
+			//cursorX = Mathf.RoundToInt(mousePosition.x);
+			//cursorY = Mathf.RoundToInt(mousePosition.z);
+			
+			
 			//Update the state and repaint
 			state = UpdateState();
 			HandleUtility.Repaint();
@@ -314,11 +324,11 @@ public class TileMapEditor : Editor
 		//Hovering
 		case State.Hover:
 			DrawGrid();
-			DrawRect(cursorX, cursorZ, 1, 1, Color.white, new Color(1, 1, 1, 0f));
+			DrawRect(cursorX, cursorY, 1, 1, Color.white, new Color(1, 1, 1, 0f));
 			if (e.type == EventType.MouseDown && e.button < 2)
 			{
 				cursorClickX = cursorX;
-				cursorClickZ = cursorZ;
+				cursorClickY = cursorY;
 				deleting = e.button > 0;
 				return State.BoxSelect;
 			}
@@ -329,12 +339,12 @@ public class TileMapEditor : Editor
 
 			//Get the drag selection
 			var x = Mathf.Min(cursorX, cursorClickX);
-			var z = Mathf.Min(cursorZ, cursorClickZ);
+			var y = Mathf.Min(cursorY, cursorClickY);
 			var sizeX = Mathf.Abs(cursorX - cursorClickX) + 1;
-			var sizeZ = Mathf.Abs(cursorZ - cursorClickZ) + 1;
+			var sizeY = Mathf.Abs(cursorY - cursorClickY) + 1;
 			
 			//Draw the drag selection
-			DrawRect(x, z, sizeX, sizeZ, Color.white, deleting ? new Color(1, 0, 0, 0.2f) : new Color(0, 1, 0, 0.2f));
+			DrawRect(x, y, sizeX, sizeY, Color.white, deleting ? new Color(1, 0, 0, 0.2f) : new Color(0, 1, 0, 0.2f));
 
 			//Finish the drag
 			if (e.type == EventType.MouseUp && e.button < 2)
@@ -342,10 +352,10 @@ public class TileMapEditor : Editor
 				if (deleting)
 				{
 					if (e.button > 0)
-						SetRect(x, z, sizeX, sizeZ, null, direction);
+						SetRect(x, y, sizeX, sizeY, null, direction);
 				}
 				else if (e.button == 0)
-					SetRect(x, z, sizeX, sizeZ, tileMap.tilePrefab, direction);
+					SetRect(x, y, sizeX, sizeY, tileMap.tilePrefab, direction);
 
 				return State.Hover;
 			}
@@ -360,24 +370,24 @@ public class TileMapEditor : Editor
 		var maxDist = Mathf.Sqrt(Mathf.Pow(gridSize - 1, 2) * 2) * 0.75f;
 		for (int x = -gridSize; x <= gridSize; x++)
 		{
-			for (int z = -gridSize; z <= gridSize; z++)
+			for (int y = -gridSize; y <= gridSize; y++)
 			{
-				Handles.color = new Color(1, 1, 1, 1 - Mathf.Sqrt(x * x + z * z) / maxDist);
-				var p = new Vector3((cursorX + x) * tileMap.tileSize, 0, (cursorZ + z) * tileMap.tileSize);
+				Handles.color = new Color(1, 1, 1, 1 - Mathf.Sqrt(x * x + y * y) / maxDist);
+				var p = new Vector3((cursorX + x) * tileMap.tileSize, (cursorY + y) * tileMap.tileSize, 0);
 				Handles.DotCap(0, p, Quaternion.identity, HandleUtility.GetHandleSize(p) * 0.02f);
 			}
 		}
 	}
 
-	void DrawRect(int x, int z, int sizeX, int sizeZ, Color outline, Color fill)
+	void DrawRect(int x, int y, int sizeX, int sizeY, Color outline, Color fill)
 	{
 		Handles.color = Color.white;
-		var min = new Vector3(x * tileMap.tileSize - tileMap.tileSize / 2, 0, z * tileMap.tileSize - tileMap.tileSize / 2);
-		var max = min + new Vector3(sizeX * tileMap.tileSize, 0, sizeZ * tileMap.tileSize);
-		rect[0].Set(min.x, 0, min.z);
-		rect[1].Set(max.x, 0, min.z);
-		rect[2].Set(max.x, 0, max.z);
-		rect[3].Set(min.x, 0, max.z);
+		var min = new Vector3(x * tileMap.tileSize - tileMap.tileSize / 2, y * tileMap.tileSize - tileMap.tileSize / 2, 0);
+		var max = min + new Vector3(sizeX * tileMap.tileSize, sizeY * tileMap.tileSize, 0);
+		rect[0].Set(min.x, min.y, 0);
+		rect[1].Set(max.x, min.y, 0);
+		rect[2].Set(max.x, max.y, 0);
+		rect[3].Set(min.x, max.y, 0);
 		Handles.DrawSolidRectangleWithOutline(rect, fill, outline);
 	}
 
@@ -402,9 +412,13 @@ public class TileMapEditor : Editor
 		{
 			//Place the tile
 			var instance = (Transform)PrefabUtility.InstantiatePrefab(tileMap.prefabs[index]);
+			Vector3 pos = tileMap.GetPosition(index);
+
 			instance.parent = tileMap.transform;
-			instance.localPosition = tileMap.GetPosition(index);
-			instance.localRotation = Quaternion.Euler(0, tileMap.directions[index] * 90, 0);
+			instance.name = instance.name + " " + pos.x + "|" + pos.y;
+			instance.localPosition = pos;
+			instance.localRotation = Quaternion.Euler(0, 0, tileMap.directions[index] * 90);
+
 			tileMap.instances[index] = instance;
 			wireframeHidden = false;
 			return true;
@@ -429,28 +443,28 @@ public class TileMapEditor : Editor
 	
 	void UpdateAll()
 	{
-		int x, z;
+		int x, y;
 		for (int i = 0; i < tileMap.hashes.Count; i++)
 		{
-			tileMap.GetPosition(i, out x, out z);
-			SetTile(x, z, tileMap.prefabs[i], tileMap.directions[i]);
+			tileMap.GetPosition(i, out x, out y);
+			SetTile(x, y, tileMap.prefabs[i], tileMap.directions[i]);
 		}
 	}
 
 	void Clear()
 	{
 		RecordDeepUndo();
-		int x, z;
+		int x, y;
 		while (tileMap.hashes.Count > 0)
 		{
-			tileMap.GetPosition(0, out x, out z);
-			SetTile(x, z, null, 0);
+			tileMap.GetPosition(0, out x, out y);
+			SetTile(x, y, null, 0);
 		}
 	}
 
-	bool SetTile(int x, int z, Transform prefab, int direction)
+	bool SetTile(int x, int y, Transform prefab, int direction)
 	{
-		var hash = tileMap.GetHash(x, z);
+		var hash = tileMap.GetHash(x, y);
 		var index = tileMap.hashes.IndexOf(hash);
 		if (index >= 0)
 		{
@@ -479,12 +493,12 @@ public class TileMapEditor : Editor
 			return false;
 	}
 
-	void SetRect(int x, int z, int sizeX, int sizeZ, Transform prefab, int direction)
+	void SetRect(int x, int y, int sizeX, int sizeY, Transform prefab, int direction)
 	{
 		RecordDeepUndo();
 		for (int xx = 0; xx < sizeX; xx++)
-			for (int zz = 0; zz < sizeZ; zz++)
-				SetTile(x + xx, z + zz, prefab, direction);
+			for (int yy = 0; yy < sizeY; yy++)
+				SetTile(x + xx, y + yy, prefab, direction);
 	}
 
 	#endregion
@@ -562,7 +576,7 @@ public class TileMapEditor : Editor
 		AssetDatabase.SaveAssets();
 		EditorUtility.FocusProjectWindow();
 		Selection.activeObject = asset;
-		asset.hideFlags = HideFlags.DontSave;
+		//asset.hideFlags = HideFlags.DontSave;
 	}
 
 	#endregion

@@ -27,26 +27,26 @@ public class TileMap : MonoBehaviour
 		UpdateConnections();
 	}
 
-	public int GetHash(int x, int z)
+	public int GetHash(int x, int y)
 	{
-		return (x + TileMap.maxColumns / 2) + (z + TileMap.maxColumns / 2) * TileMap.maxColumns;
+		return (x + TileMap.maxColumns / 2) + (y + TileMap.maxColumns / 2) * TileMap.maxColumns;
 	}
 	
-	public int GetIndex(int x, int z)
+	public int GetIndex(int x, int y)
 	{
-		return hashes.IndexOf(GetHash(x, z));
+		return hashes.IndexOf(GetHash(x, y));
 	}
 	
 	public Vector3 GetPosition(int index)
 	{
 		index = hashes[index];
-		return new Vector3(((index % maxColumns) - (maxColumns / 2)) * tileSize, 0, ((index / maxColumns) - (maxColumns / 2)) * tileSize);
+		return new Vector3(((index % maxColumns) - (maxColumns / 2)) * tileSize, ((index / maxColumns) - (maxColumns / 2)) * tileSize, 0);
 	}
-	public void GetPosition(int index, out int x, out int z)
+	public void GetPosition(int index, out int x, out int y)
 	{
 		index = hashes[index];
 		x = (index % maxColumns) - (maxColumns / 2);
-		z = (index / maxColumns) - (maxColumns / 2);
+		y = (index / maxColumns) - (maxColumns / 2);
 	}
 
 	public void UpdateConnections()
@@ -58,41 +58,41 @@ public class TileMap : MonoBehaviour
 			var tile = instances[i].GetComponent<PathTile>();
 			if (tile != null)
 			{
-				int x, z;
-				GetPosition(i, out x, out z);
+				int x, y;
+				GetPosition(i, out x, out y);
 				tile.connections.Clear();
-				r = Connect(tile, x, z, x + 1, z);
-				l = Connect(tile, x, z, x - 1, z);
-				f = Connect(tile, x, z, x, z + 1);
-				b = Connect(tile, x, z, x, z - 1);
+				r = Connect(tile, x, y, x + 1, y);
+				l = Connect(tile, x, y, x - 1, y);
+				f = Connect(tile, x, y, x, y + 1);
+				b = Connect(tile, x, y, x, y - 1);
 				if (connectDiagonals)
 				{
 					if (cutCorners)
 					{
-						Connect(tile, x, z, x + 1, z + 1);
-						Connect(tile, x, z, x - 1, z - 1);
-						Connect(tile, x, z, x - 1, z + 1);
-						Connect(tile, x, z, x + 1, z - 1);
+						Connect(tile, x, y, x + 1, y + 1);
+						Connect(tile, x, y, x - 1, y - 1);
+						Connect(tile, x, y, x - 1, y + 1);
+						Connect(tile, x, y, x + 1, y - 1);
 					}
 					else
 					{
 						if (r != null && f != null)
-							Connect(tile, x, z, x + 1, z + 1);
+							Connect(tile, x, y, x + 1, y + 1);
 						if (l != null && b != null)
-							Connect(tile, x, z, x - 1, z - 1);
+							Connect(tile, x, y, x - 1, y - 1);
 						if (l != null && f != null)
-							Connect(tile, x, z, x - 1, z + 1);
+							Connect(tile, x, y, x - 1, y + 1);
 						if (r != null && b != null)
-							Connect(tile, x, z, x + 1, z - 1);
+							Connect(tile, x, y, x + 1, y - 1);
 					}
 				}
 			}
 		}
 	}
 
-	PathTile Connect(PathTile tile, int x, int z, int toX, int toZ)
+	PathTile Connect(PathTile tile, int x, int y, int toX, int toY)
 	{
-		var index = GetIndex(toX, toZ);
+		var index = GetIndex(toX, toY);
 		if (index >= 0)
 		{
 			var other = instances[index].GetComponent<PathTile>();
@@ -105,9 +105,9 @@ public class TileMap : MonoBehaviour
 		return null;
 	}
 
-	PathTile GetPathTile(int x, int z)
+	PathTile GetPathTile(int x, int y)
 	{
-		var index = GetIndex(x, z);
+		var index = GetIndex(x, y);
 		if (index >= 0)
 			return instances[index].GetComponent<PathTile>();
 		else
@@ -116,8 +116,8 @@ public class TileMap : MonoBehaviour
 	public PathTile GetPathTile(Vector3 position)
 	{
 		var x = Mathf.RoundToInt(position.x / tileSize);
-		var z = Mathf.RoundToInt(position.z / tileSize);
-		return GetPathTile(x, z);
+		var y = Mathf.RoundToInt(position.y / tileSize);
+		return GetPathTile(x, y);
 	}
 	
 	public bool FindPath(PathTile start, PathTile end, List<PathTile> path, Predicate<PathTile> isWalkable)
