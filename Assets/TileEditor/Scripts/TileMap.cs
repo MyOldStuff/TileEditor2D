@@ -5,6 +5,7 @@ using System;
 
 public class TileMap : MonoBehaviour
 {
+
 	static Queue<PathTile> queue = new Queue<PathTile>();
 	static List<PathTile> closed = new List<PathTile>();
 	static Dictionary<PathTile, PathTile> source = new Dictionary<PathTile, PathTile>();
