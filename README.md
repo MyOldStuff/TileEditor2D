@@ -5,4 +5,4 @@ Creating tile-based levels in Unity is much faster and easier with this tile edi
 
 modified by michidk:
 now you can use it for Tile-Based 2D Games with 2D Collider and 2D Pathfinding Support.
-+ fixes for newert Unity versions
+fixes for newer Unity versions
