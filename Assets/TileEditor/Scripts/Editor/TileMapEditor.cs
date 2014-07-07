@@ -414,12 +414,12 @@ public class TileMapEditor : Editor
 			//Place the tile
 			var instance = (Transform)PrefabUtility.InstantiatePrefab(tileMap.prefabs[index]);
 			Vector3 pos = tileMap.GetPosition(index);
-
+			
 			instance.parent = tileMap.transform;
 			instance.name = instance.name + " " + pos.x + "|" + pos.y;
-			instance.localPosition = pos;
+			instance.localPosition = pos - tileMap.prefabs[index].position;
 			instance.localRotation = Quaternion.Euler(0, 0, tileMap.directions[index] * 90);
-
+			
 			tileMap.instances[index] = instance;
 			wireframeHidden = false;
 			return true;
